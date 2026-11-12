@@ -1760,6 +1760,18 @@ tensor(..., device='meta', size=(1,), requires_grad=True)""")
         sample = next(model.parameters())[0, 0, 0]
         self.assertTrue(torch.equal(sample.data, vec.data[:5]))
 
+    def test_vector_to_parameters_wrong_size(self):
+        model = nn.Sequential(nn.Conv2d(3, 10, 5), nn.Linear(10, 20))
+        parameters = list(model.parameters())
+        expected_size = sum(param.numel() for param in parameters)
+
+        for vector_size in (expected_size - 1, expected_size + 1):
+            with self.assertRaisesRegex(
+                ValueError,
+                f"vector has {vector_size} elements, but parameters have {expected_size} elements",
+            ):
+                vector_to_parameters(torch.empty(vector_size), parameters)
+
     def test_rnn_weight_norm(self):
         def check_weight_norm(l, name, num_params):
             # This Module has 4 or 5 parameters called:

@@ -39,6 +39,13 @@ def vector_to_parameters(vec: torch.Tensor, parameters: Iterable[torch.Tensor]) 
     # Flag for the device where the parameter is located
     param_device = None
 
+    parameters = list(parameters)
+    expected_numel = sum(param.numel() for param in parameters)
+    if vec.numel() != expected_numel:
+        raise ValueError(
+            f"vector has {vec.numel()} elements, but parameters have {expected_numel} elements"
+        )
+
     # Pointer for slicing the vector for each parameter
     pointer = 0
     for param in parameters:
