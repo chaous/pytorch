@@ -1664,7 +1664,7 @@ class MetaConverter(Generic[_TensorT]):
 
                     r = callback(
                         lambda: torch.ops.aten._sparse_compressed_tensor_with_dims(
-                            0,
+                            t.values.shape[0],
                             t.dense_dim,
                             t.shape,
                             blocksize,

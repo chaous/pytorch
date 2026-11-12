@@ -965,11 +965,7 @@ def forward(self, primals_1):
             return a.to_dense().sum()
 
         f_compiled = aot_function(f, nop)
-        with self.assertRaisesRegex(
-            RuntimeError,
-            r"invalid gradient at index 0 - got \[0\] but expected shape compatible with \[4\]",
-        ):
-            f_compiled(torch.randn(4, requires_grad=True))
+        f_compiled(torch.randn(4, requires_grad=True))
 
     # https://github.com/pytorch/pytorch/issues/93363
     def test_mutates_input_noncontiguous(self):

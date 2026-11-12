@@ -3425,6 +3425,30 @@ class FakeTensorMode(TorchDispatchMode):
             if fast_impl is not None:
                 return maybe_propagate_real_tensors(fast_impl(self, *args, **kwargs))
 
+        if func is aten.sparse_mask.default and args[1].layout in (
+            torch.sparse_csr,
+            torch.sparse_csc,
+        ):
+            mask = args[1]
+            values = torch.empty_like(mask.values(), dtype=args[0].dtype)
+            if mask.layout == torch.sparse_csr:
+                return maybe_propagate_real_tensors(
+                    torch.sparse_csr_tensor(
+                        mask.crow_indices(),
+                        mask.col_indices(),
+                        values,
+                        size=args[0].shape,
+                    )
+                )
+            return maybe_propagate_real_tensors(
+                torch.sparse_csc_tensor(
+                    mask.ccol_indices(),
+                    mask.row_indices(),
+                    values,
+                    size=args[0].shape,
+                )
+            )
+
         if func is torch.ops.aten.to_dense.default:
             # The registered fake op impl handles the usual path, but symbolic
             # shapes can still reach generic decomposition below. The native

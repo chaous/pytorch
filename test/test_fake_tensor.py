@@ -263,6 +263,19 @@ class TestFakeTensor(_TestFakeTensorHelpers, TestCase):
                 self.assertEqual(d.shape, ref.shape)
                 self.assertEqual(d.layout, torch.strided)
 
+    def test_sparse_mask_sparse_compressed(self):
+        for layout in (torch.sparse_csr, torch.sparse_csc):
+            mask = torch.eye(2).to_sparse(layout=layout)
+            expected = torch.ones(2, 2).sparse_mask(mask)
+            mode = FakeTensorMode()
+            fake_self = mode.from_tensor(torch.ones(2, 2))
+            fake_mask = mode.from_tensor(mask)
+            with mode:
+                result = fake_self.sparse_mask(fake_mask)
+            self.assertEqual(result.layout, expected.layout)
+            self.assertEqual(result.shape, expected.shape)
+            self.assertEqual(result._nnz(), expected._nnz())
+
     @skipIfPropagateRealTensors("real pin_memory needs an accelerator")
     def test_sparse_compressed_tensor_creation_pin_memory(self):
         if torch._functorch.config.fake_tensor_propagate_real_tensors:
