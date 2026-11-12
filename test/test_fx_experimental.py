@@ -572,6 +572,27 @@ class TestFXExperimental(JitTestCase):
 
         self.assertEqual(fused(inp), rn18(inp))
 
+    def test_conv_bn_fusion_reused_conv(self):
+        class M(torch.nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.conv = torch.nn.Conv2d(3, 8, 3, padding=1)
+                self.bn = torch.nn.BatchNorm2d(8)
+
+            def forward(self, x, y):
+                return self.bn(self.conv(x)), self.conv(y)
+
+        model = M().eval()
+        inp = torch.randn(2, 3, 8, 8)
+        other = torch.randn(2, 3, 8, 8)
+
+        expected = model(inp, other)
+        fused = optimization.fuse(model)
+        actual = fused(inp, other)
+
+        self.assertEqual(actual, expected)
+        self.assertTrue(any(isinstance(m, torch.nn.BatchNorm2d) for m in fused.modules()))
+
     def test_conv_bn_fusion_not_running_state(self):
         class M(torch.nn.Module):
             def __init__(self) -> None:

@@ -94,12 +94,20 @@ def fuse(
         fx_model = model
     modules = dict(fx_model.named_modules())
     new_graph = copy.deepcopy(fx_model.graph)
+    module_use_count = defaultdict(int)
+    for node in new_graph.nodes:
+        if node.op == "call_module":
+            module_use_count[node.target] += 1
 
     for pattern in patterns:
         for node in new_graph.nodes:
             if matches_module_pattern(pattern, node, modules):
-                if len(node.args[0].users) > 1:
-                    # Output of conv/linear is used by other nodes
+                if (
+                    len(node.args[0].users) > 1
+                    or module_use_count[node.args[0].target] > 1
+                ):
+                    # Output of conv/linear is used by other nodes, or the
+                    # module is called more than once.
                     continue
                 first_layer = modules[node.args[0].target]
                 bn = modules[node.target]
