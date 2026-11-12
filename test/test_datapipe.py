@@ -453,6 +453,13 @@ class TestIterableDataPipeBasic(TestCase):
                 rec[1][i][1].close()
         self.assertEqual(count, 8)
 
+    def test_groupby_keep_key_buffer_eviction(self):
+        datapipe = dp.iter.IterableWrapper(["a", "a", "b"]).groupby(
+            group_key_fn=str, keep_key=True, buffer_size=3
+        )
+        result = [(key, list(group)) for key, group in datapipe]
+        self.assertEqual(result, [("a", ["a", "a"]), ("b", ["b"])])
+
     def test_demux_mux_datapipe(self):
         numbers = NumbersDataset(10)
         n1, n2 = numbers.demux(2, lambda x: x % 2)
