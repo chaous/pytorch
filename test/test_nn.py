@@ -1749,6 +1749,27 @@ tensor(..., device='meta', size=(1,), requires_grad=True)""")
         vec = parameters_to_vector(model.parameters())
         self.assertEqual(vec.size(0), 980)
 
+    def test_parameters_to_vector_channels_last(self):
+        conv = nn.Conv2d(3, 4, 3)
+        expected = parameters_to_vector(conv.parameters())
+        conv.to(memory_format=torch.channels_last)
+
+        self.assertEqual(parameters_to_vector(conv.parameters()), expected)
+
+    def test_parameters_to_vector_noncontiguous_gradient(self):
+        conv = nn.Conv2d(3, 4, 3)
+        conv.to(memory_format=torch.channels_last)
+        weight_gradient = torch.arange(conv.weight.numel(), dtype=conv.weight.dtype).reshape(conv.weight.shape)
+        bias_gradient = torch.arange(conv.bias.numel(), dtype=conv.bias.dtype)
+        conv.weight.grad = weight_gradient.to(memory_format=torch.channels_last)
+        conv.bias.grad = bias_gradient
+
+        self.assertFalse(conv.weight.grad.is_contiguous())
+        expected = torch.cat((weight_gradient.reshape(-1), bias_gradient))
+        actual = parameters_to_vector(parameter.grad for parameter in conv.parameters())
+        self.assertEqual(actual.numel(), expected.numel())
+        self.assertEqual(actual, expected)
+
     def test_vector_to_parameters(self):
         conv1 = nn.Conv2d(3, 10, 5)
         fc1 = nn.Linear(10, 20)
