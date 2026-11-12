@@ -113,9 +113,12 @@ def _get_total_norm(
                 ]
             )
 
-    total_norm = torch.linalg.vector_norm(
-        torch.stack([norm.to(first_device) for norm in norms]), norm_type, dtype=dtype
-    )
+    stacked_norms = torch.stack([norm.to(first_device) for norm in norms])
+    if norm_type == 0:
+        # The 0-norm counts non-zero elements, so the per-tensor counts add up.
+        total_norm = torch.sum(stacked_norms, dtype=dtype)
+    else:
+        total_norm = torch.linalg.vector_norm(stacked_norms, norm_type, dtype=dtype)
 
     if error_if_nonfinite and torch.logical_or(total_norm.isnan(), total_norm.isinf()):
         raise RuntimeError(
