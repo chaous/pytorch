@@ -95,6 +95,12 @@ def _no_grad_trunc_normal_(
     if tensor.is_meta:
         return tensor
 
+    if std < 0:
+        raise ValueError(f"trunc_normal_ expects std >= 0.0, but found std {std}")
+    if std == 0:
+        with torch.no_grad():
+            return tensor.fill_(max(a, min(mean, b)))
+
     def norm_cdf(x: float) -> float:
         return (1.0 + math.erf(x / math.sqrt(2.0))) / 2.0
 

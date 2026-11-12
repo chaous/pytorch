@@ -176,6 +176,20 @@ class TestNNInit(TestCase):
         if not self._is_trunc_normal(input_tensor, mean=0, std=1, a=0, b=1):
             raise AssertionError("Expected truncated normal distribution")
 
+    def test_trunc_normal_invalid_std(self):
+        with self.assertRaisesRegex(ValueError, r"std >= 0.0"):
+            init.trunc_normal_(torch.empty(5), std=-1.0)
+
+        tensor = torch.empty(3)
+        init.trunc_normal_(tensor, mean=0.5, std=0.0)
+        self.assertEqual(tensor, torch.full_like(tensor, 0.5))
+
+        init.trunc_normal_(tensor, mean=-1.0, std=0.0, a=0.0, b=1.0)
+        self.assertEqual(tensor, torch.zeros_like(tensor))
+
+        init.trunc_normal_(tensor, mean=2.0, std=0.0, a=0.0, b=1.0)
+        self.assertEqual(tensor, torch.ones_like(tensor))
+
     def test_init_methods_meta(self):
         for fn, shape, kwargs in ALL_INIT_FNS:
             with self.subTest(init_fn=fn.__name__):
