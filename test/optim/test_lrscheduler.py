@@ -1199,6 +1199,21 @@ class TestLRScheduler(TestCase):
         with self.assertRaises(ValueError):
             scheduler = CyclicLR(self.opt, base_lr=0, max_lr=0, mode="CATS")
 
+    def test_cycle_lr_load_state_dict_does_not_mutate_state_dict(self):
+        scheduler = CyclicLR(
+            self.opt,
+            base_lr=0.1,
+            max_lr=0.5,
+            step_size_up=2,
+            cycle_momentum=False,
+        )
+        checkpoint = scheduler.state_dict()
+        checkpoint_copy = checkpoint.copy()
+
+        scheduler.load_state_dict(checkpoint)
+        self.assertEqual(checkpoint, checkpoint_copy)
+        scheduler.load_state_dict(checkpoint)
+
     def test_cycle_lr_triangular_mode_one_lr(self):
         lr_target = [1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3]
         momentum_target = [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]
